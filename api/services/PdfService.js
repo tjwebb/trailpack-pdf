@@ -2,6 +2,7 @@
 
 const Service = require('trails-service')
 const _ = require('lodash')
+const path = require('path')
 
 /**
  * @module PdfService
@@ -43,14 +44,22 @@ module.exports = class PdfService extends Service {
    * @param properties to pass to the page
    * @returns Promise
    */
-  generateFromHtml(html, path, settings, properties) {
-    return this._configurePage(settings, properties).then(page => {
-      return page.property('content', html).then(status => {
-        return page.render(path).then(() => {
-          page.close()
-        })
+  generateFromHtml(html, filename, settings, properties) {
+    const tmp = this.app.config.main.paths.temp
+    const outputPath = path.resolve(tmp, filename)
+
+    return this._configurePage(settings, properties)
+      .then(page => {
+        return page.property('content', html)
+          .then(status => {
+            this.log.debug(`trailpack-pdf: ${filename} status: ${status}`)
+            return page.render(outputPath)
+          })
+          .then(() => {
+            page.close()
+            return outputPath
+          })
       })
-    })
   }
 
   /**
